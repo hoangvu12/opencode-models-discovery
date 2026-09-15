@@ -60,7 +60,7 @@
   "devDependencies": {
     "@opencode-ai/plugin": "^1.17.10",
     "@types/node": "^26.5.1",
-    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/coverage-v8": "^5.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
