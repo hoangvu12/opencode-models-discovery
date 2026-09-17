@@ -813,7 +813,7 @@ describe('ModelDiscovery Plugin', () => {
       })
     })
 
-    it('does not inject expired inventory after a failed refresh but keeps explicit models', async () => {
+    it('reuses expired inventory after a failed refresh so the Provider is not dropped', async () => {
       const store = new ProviderModelStore(cacheRoot)
       await store.saveModels({
         id: 'expired',
@@ -837,7 +837,10 @@ describe('ModelDiscovery Plugin', () => {
 
       await pluginHooks.config(config)
 
-      expect(config.provider.expired.models).toEqual({ explicit: { id: 'explicit', name: 'Explicit model' } })
+      // A failed refresh must not drop the Provider: the last-good inventory is
+      // still better than making every `expired/model` reference unresolvable.
+      expect(config.provider.expired.models['stale-model']).toBeDefined()
+      expect(config.provider.expired.models['explicit']).toEqual({ id: 'explicit', name: 'Explicit model' })
       expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 

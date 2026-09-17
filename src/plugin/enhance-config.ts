@@ -262,18 +262,31 @@ export async function enhanceConfig(
           apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
           const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs)
           if (!discovery.ok) {
-            const existingModels = getExplicitModels(config, providerName, p.models || {})
-            p.models = existingModels
-            replaceInjectedModels(config, providerName, {})
-            logger.warn('Provider model discovery failed', {
-              provider: providerName,
-              baseURL,
-              endpoint: modelsEndpoint,
-            })
-            continue
+            if (persistedState !== undefined) {
+              // The refresh failed but a real, if stale, inventory exists. Reuse
+              // it instead of dropping the Provider, which makes every
+              // `provider/model` reference fail with "Model not found".
+              discoveredModels = persistedState.models
+              usingPersistedModels = true
+              logger.warn('Provider model discovery failed; reusing stale inventory', {
+                provider: providerName,
+                baseURL,
+                endpoint: modelsEndpoint,
+              })
+            } else {
+              const existingModels = getExplicitModels(config, providerName, p.models || {})
+              p.models = existingModels
+              replaceInjectedModels(config, providerName, {})
+              logger.warn('Provider model discovery failed', {
+                provider: providerName,
+                baseURL,
+                endpoint: modelsEndpoint,
+              })
+              continue
+            }
+          } else {
+            models = discovery.models.filter(isValidModel)
           }
-
-          models = discovery.models.filter(isValidModel)
         }
       } else {
         apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
