@@ -10,6 +10,28 @@
 
 Originally inspired by [opencode-lmstudio](https://github.com/agustif/opencode-lmstudio), this project has been refactored into a general-purpose model discovery plugin with provider-level discovery controls, model filtering, metadata enrichment, and `/connect`-backed credential support.
 
+> **Fork notice.** This is a fork of [yuhp/opencode-models-discovery](https://github.com/yuhp/opencode-models-discovery) carrying one fix: when a cached inventory is stale and the refresh request fails, upstream discards the last-good inventory and effectively drops the provider, so every `provider/model` reference fails with `Model not found`. This fork reuses the stale inventory instead. Branch: [`fix/stale-cache-fallback`](https://github.com/hoangvu12/opencode-models-discovery/tree/fix/stale-cache-fallback).
+
+## Installing this fork
+
+OpenCode installs `plugin` entries through npm's `arborist`. It cannot install a `github:` or `git+https:` spec — it writes the dependency tree but never the plugin package, so the plugin silently never loads. Install this fork from a GitHub archive tarball instead; no npm publish is needed.
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "https://github.com/hoangvu12/opencode-models-discovery/archive/20d9c70f648a43daa4445742c2b4f9be3096d4a7.tar.gz"
+  ]
+}
+```
+
+- The URL is pinned to a commit, so installs are reproducible.
+- For the latest state of the branch, use `https://github.com/hoangvu12/opencode-models-discovery/archive/refs/heads/fix/stale-cache-fallback.tar.gz`.
+- The package ships its built `dist/`, so no build runs during install.
+- Restart OpenCode after changing the plugin entry; the plugin is cached under `~/.cache/opencode/packages/` and can be deleted to force a reinstall.
+
+The published upstream package remains available as `opencode-models-discovery@latest` for anyone who does not need the fix.
+
 ## Features
 
 - Works with any OpenAI-compatible provider
@@ -137,7 +159,7 @@ This command is available whenever the plugin is loaded.
 
 ## Persisted Model Discovery Cache
 
-Caching is opt-in per provider. When enabled, the plugin stores the last successful filtered and metadata-enriched discovered model configuration under its own XDG data directory and reuses it until its TTL expires. A fresh cache avoids model-endpoint requests, credential resolution, and enrichment requests. Expired cached models are never used if a refresh fails.
+Caching is opt-in per provider. When enabled, the plugin stores the last successful filtered and metadata-enriched discovered model configuration under its own XDG data directory and reuses it until its TTL expires. A fresh cache avoids model-endpoint requests, credential resolution, and enrichment requests. Upstream never uses expired cached models if a refresh fails; **this fork reuses the stale inventory instead**, so a transient provider outage cannot turn into `Model not found` for every model the provider serves.
 
 ```json
 {
